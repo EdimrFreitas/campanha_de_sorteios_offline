@@ -1,0 +1,10 @@
+{
+    "ID_planilha": "1lojJ4Y3W20H06NVmpj_-OAmz8uS7EbzRQfW0MpnSZ_s",
+    "script_id": "1hQvJ9Q68ausHWE6oBey26o8huJcbqwfzfu9c28CcFkE36VS5pR5G2dsa",
+    "formID": "1zVIVdTiveGPUf29YJg4hOlK8KTB-Rm2o-yV9a3nq7r8",
+    "permissoes": [
+        "https://www.googleapis.com/auth/forms",
+        "https://www.googleapis.com/auth/spreadsheets"
+    ],
+    "tempo_espera": 5
+}
