@@ -1,16 +1,16 @@
-import pip
-from os.path import abspath
 import threading
 from tkinter import Tk
+from tkinter.messagebox import showinfo
 
 from docbr import parse, validate
 
 from Modulos.configs import Configs
-from Modulos.construtor import self
+from Modulos.construtor import Construtor
 from Modulos.imprimir import Printing
+from Modulos.arquivo import AbreArquivo
 
 
-class Main(Configs, Printing, self):
+class Main(Configs, Printing, AbreArquivo, Tk):
     total_de_cadastros = 0
     total_de_participantes_validos = 0
     total_de_cpfs_invalidos = 0
@@ -19,209 +19,170 @@ class Main(Configs, Printing, self):
     def __init__(self):
         Configs.__init__(self)
         self.iniciar_root()
-        self.abre_arquivo()
-        self.inicia_frames()
+        AbreArquivo.__init__(self)
+        self.inicia_frame()
         self.inicia_widgets()
         self.binds()
 
-        self.root.mainloop()
+        self.mainloop()
 
     def iniciar_root(self):
         # Parâmetros de  tamanh da tela
         tam_x, tam_y = 500, 400
-        root = Tk()
-        root.configure(background = self.cor_da_borda)
-        root.title('Verificador offline')
+        Tk.__init__(self)
+        self.configure(**self.root_param)
+        self.title('Verificador offline')
         # Parâmetros de posicionamento da janela na tela do usuário
-        pos_x = int((root.winfo_screenwidth() - tam_x) / 2)
-        pos_y = int((root.winfo_screenheight() - tam_y) / 2)
-        root.geometry(f'{tam_x}x{tam_y}+{pos_x}+{pos_y}')
+        pos_x = int((self.winfo_screenwidth() - tam_x) / 2)
+        pos_y = int((self.winfo_screenheight() - tam_y) / 2)
+        self.geometry(f'{tam_x}x{tam_y}+{pos_x}+{pos_y}')
         # Seta como fixo os tamanhos da tela
-        root.resizable(False, False)
-        self.root = root
+        self.resizable(False, False)
 
-    def inicia_frames(self):
-        frames = {
-            'frame_principal': {
-                'param': {'master': self.root, 'name': 'principal', 'bg': self.cor_de_fundo},
-                'place': {'relwidth': 0.96, 'relheight': 0.96, 'relx': 0.02, 'rely': 0.02}
-            }
+    def inicia_frame(self):
+        frame = dict()
+
+        frame['frame_principal'] = {
+            'param': {'master': self, 'name': 'principal', **self.frame_param},
+            'place': {'relwidth': 0.96, 'relheight': 0.96, 'relx': 0.02, 'rely': 0.02}
         }
-        self.frame(frames)
-        self.frame_principal = self.root.children['principal']
+        Construtor.frame(frame)
 
     def inicia_widgets(self):
-        barra_de_progresso = {
-            'barra1': {
-                'param': {
-                    'master':  self.frame_principal, 'orient': 'horizontal', 'mode': 'determinate', 'length': 420,
-                    'maximum': self.total_de_cadastros, 'value': 0, 'name': 'progresso'
-                },
-                'grid':  {'columnspan': 2, 'row': 1, 'padx': 5, 'pady': 10}
-            }
-        }
-        self.progressbar(barra_de_progresso)
+        frame_principal = self.children['principal']
+        labels = dict()
+        barra_de_progresso = dict()
+        comboboxes = dict()
+        botoes = dict()
 
-        labels = {
-            'impressora':                   {
-                'param': {
-                    'master': self.frame_principal, 'text': 'Selecione a impressora', 'bg': self.cor_de_fundo,
-                    'font':   self.fonte
-                },
-                'grid':  {'column': 0, 'row': 0, 'padx': 10, 'pady': 10}
-            },
-            'texto_info':                   {
-                'param': {
-                    'master': self.frame_principal, 'text': f'Analisando: ', 'bg': self.cor_de_fundo,
-                    'font':   self.fonte
-                },
-                'grid':  {'column': 0, 'row': 2, 'padx': 10, 'pady': 10, 'sticky': 'e'}
-            },
-            'numero_info':                  {
-                'param': {
-                    'master': self.frame_principal, 'name': 'info', 'text': f'{self.linha_atual} de'
-                                                                            f' {self.total_de_cadastros}',
-                    'bg':     self.cor_de_fundo, 'font': self.fonte
-                },
-                'grid':  {'column': 1, 'row': 2, 'padx': 0, 'pady': 10, 'sticky': 'w'}
-            },
-            'texto_participantes_validos':  {
-                'param': {
-                    'master': self.frame_principal, 'text': 'Participantes válidos:', 'bg': self.cor_de_fundo,
-                    'font':   self.fonte
-                },
-                'grid':  {'column': 0, 'row': 3, 'padx': 10, 'pady': 10, 'sticky': 'e'}
-            },
-            'numero_participantes_validos': {
-                'param': {
-                    'master': self.frame_principal, 'text': '-', 'name': 'numero_validos', 'bg': self.cor_de_fundo,
-                    'font':   self.fonte
-                },
-                'grid':  {'column': 1, 'row': 3, 'padx': 0, 'pady': 10, 'sticky': 'w'}
-            },
-            'texto_cpfs_invalidos':         {
-                'param': {
-                    'master': self.frame_principal, 'text': 'CPFs inválidos:', 'bg': self.cor_de_fundo,
-                    'font':   self.fonte
-                },
-                'grid':  {'column': 0, 'row': 4, 'padx': 10, 'pady': 10, 'sticky': 'e'}
-            },
-            'numero_cpfs_invalidos':        {
-                'param': {
-                    'master': self.frame_principal, 'text': '-', 'name': 'numero_invalidos', 'bg': self.cor_de_fundo,
-                    'font':   self.fonte
-                },
-                'grid':  {'column': 1, 'row': 4, 'padx': 0, 'pady': 10, 'sticky': 'w'}
-            },
-            'texto_cadastro_repetido':      {
-                'param': {
-                    'master': self.frame_principal, 'text': 'Cadastros repetidos:', 'bg': self.cor_de_fundo,
-                    'font':   self.fonte
-                },
-                'grid':  {'column': 0, 'row': 5, 'padx': 10, 'pady': 10, 'sticky': 'e'}
-            },
-            'numero_cadastro_repetido':     {
-                'param': {
-                    'master': self.frame_principal, 'text': '-', 'name': 'numero_repetidos', 'bg': self.cor_de_fundo,
-                    'font':   self.fonte
-                },
-                'grid':  {'column': 1, 'row': 5, 'padx': 0, 'pady': 10, 'sticky': 'w'}
-            },
+        labels['impressora'] = {
+            'param': {'master': frame_principal, 'text': 'Selecione a impressora', **self.labels_param},
+            'grid': {'column': 0, 'row': 0, 'padx': 10, 'pady': 10}
         }
-        self.label(labels)
 
-        comboboxes = {
-            'printers': {
-                'param': {'master': self.frame_principal, 'name': 'impressora', 'values': self.listar_impressoras()},
-                'grid':  {'column': 1, 'row': 0, 'padx': 10, 'pady': 10}
-            }
+        comboboxes['printers'] = {
+            'param': {'master': frame_principal, 'name': 'impressora', 'values': self.listar_impressoras()},
+            'grid': {'column': 1, 'row': 0, 'padx': 10, 'pady': 10}
         }
-        self.combobox(comboboxes)
 
-        botoes = {
-            'iniciar': {
-                'param': {
-                    'master': self.frame_principal, 'name': 'bt_inicia_analise', 'command': self.inicia_verificacao,
-                    'text':   'Iniciar análises'
-                },
-                'grid':  {'columnspan': 2, 'row': 6, 'padx': 10, 'pady': 10, 'sticky': 'nsew'}
+        barra_de_progresso['barra1'] = {
+            'param': {
+                'master': frame_principal, 'orient': 'horizontal', 'mode': 'determinate', 'length': 420,
+                'maximum': self.total_de_cadastros, 'value': 0, 'name': 'progresso'
             },
+            'grid': {'columnspan': 2, 'row': 1, 'padx': 5, 'pady': 10}
         }
-        self.button(botoes)
 
-        self.frame_principal.children['impressora'].current(5)
+        labels['texto_info'] = {
+            'param': {'master': frame_principal, 'text': f'Analisando: ', **self.labels_param},
+            'grid': {'column': 0, 'row': 2, 'padx': 10, 'pady': 10, 'sticky': 'e'}
+        }
+
+        labels['numero_info'] = {
+            'param': {
+                'master': frame_principal, 'name': 'info', 'text': f'{self.linha_atual} de {self.total_de_cadastros}',
+                **self.labels_param
+            },
+            'grid': {'column': 1, 'row': 2, 'padx': 0, 'pady': 10, 'sticky': 'w'}
+        }
+
+        labels['texto_participantes_validos'] = {
+            'param': {'master': frame_principal, 'text': 'Participantes válidos:', **self.labels_param},
+            'grid': {'column': 0, 'row': 3, 'padx': 10, 'pady': 10, 'sticky': 'e'}
+        }
+
+        labels['numero_participantes_validos'] = {
+            'param': {'master': frame_principal, 'text': '-', 'name': 'numero_validos', **self.labels_param},
+            'grid': {'column': 1, 'row': 3, 'padx': 0, 'pady': 10, 'sticky': 'w'}
+        }
+
+        labels['texto_cpfs_invalidos'] = {
+            'param': {'master': frame_principal, 'text': 'CPFs inválidos:', **self.labels_param},
+            'grid': {'column': 0, 'row': 4, 'padx': 10, 'pady': 10, 'sticky': 'e'}
+        }
+
+        labels['numero_cpfs_invalidos'] = {
+            'param': {'master': frame_principal, 'text': '-', 'name': 'numero_invalidos', **self.labels_param},
+            'grid': {'column': 1, 'row': 4, 'padx': 0, 'pady': 10, 'sticky': 'w'}
+        }
+
+        labels['texto_cadastro_repetido'] = {
+            'param': {'master': frame_principal, 'text': 'Cadastros repetidos:', **self.labels_param},
+            'grid': {'column': 0, 'row': 5, 'padx': 10, 'pady': 10, 'sticky': 'e'}
+        }
+
+        labels['numero_cadastro_repetido'] = {
+            'param': {'master': frame_principal, 'text': '-', 'name': 'numero_repetidos', **self.labels_param},
+            'grid': {'column': 1, 'row': 5, 'padx': 0, 'pady': 10, 'sticky': 'w'}
+        }
+
+        botoes['iniciar'] = {
+            'param': {
+                'master': frame_principal, 'name': 'bt_inicia_analise', 'command': self.inicia_verificacao,
+                'text': 'Iniciar análises'
+            },
+            'grid': {'columnspan': 2, 'row': 6, 'padx': 10, 'pady': 10, 'sticky': 'nsew'}
+        }
+
+        Construtor.label(labels)
+        Construtor.combobox(comboboxes)
+        Construtor.progressbar(barra_de_progresso)
+        Construtor.button(botoes)
+
+        frame_principal.children['impressora'].current(0)
 
     def inicia_verificacao(self):
-        print('1234...')
-        self.t1 = threading.Thread(target = self.verifica, daemon = True)
-        self.t1.start()
-        self.frame_principal.children['bt_inicia_analise'].destroy()
+        t1 = threading.Thread(target=self.verifica, daemon=True)
+        t1.start()
+        self.children['principal'].children['bt_inicia_analise'].destroy()
 
     def verifica(self):
         ja_registrados = list()
-        with open(file = self.path_arquivo, mode = 'r', encoding = 'UTF-16') as arquivo:
-            for id, linha in enumerate(arquivo):
-                if id == 0:
-                    self.adiciona_info_filtrada(linha)
-                else:
-                    infos = linha.split('\t')
-                    cpf = infos[2]
-                    nome = infos[5]
-                    if cpf not in ja_registrados and self.cpf_valido(cpf):
-                        self.adiciona_info_filtrada(linha)
+        impressora = self.children['principal'].children['impressora'].get()
+        self.dicionario_arquivo_filtrado.writeheader()
+        for cadastro in self.dicionario_arquivo:
+            cpf_bruto = str(cadastro['CPF (sem pontos e traço ex: 12345678900)'])
+            cpf = self.mascara_cpf(cpf_bruto)
+            if cpf not in ja_registrados and self.valida_cpf([cpf]):
+                self.total_de_participantes_validos += 1
+                self.dicionario_arquivo_filtrado.writerow(cadastro)
+                ja_registrados.append(cpf)
+                self.imprimir(cpf=cpf, nome=cadastro['Nome completo'].capitalize(), impressora=impressora)
+            self.atualiza_progresso()
 
-                        self.imprimir(cpf = self.mascara_cpf(cpf), nome = nome)
-                        ja_registrados.append(cpf)
-
-                        self.total_de_participantes_validos += 1
-                self.atualiza_progresso()
-
-                (self.show_info(titulo = 'Concluido', mensagem = 'Análise e impressões concluidas'))
-
-    def abre_arquivo(self):
-        extenssoes = [('Arquivos CSV', '*.csv')]
-        self.path_arquivo = self.abrir_arquivo(titulo = 'Selecione o arquivo', extenssoes = extenssoes)
-        with open(file = self.path_arquivo, mode = 'r') as arquivo_csv:
-            for _ in arquivo_csv:
-                self.total_de_cadastros += 1
-            self.total_de_cadastros -= 1
-            return arquivo_csv.close()
+        (self.show_info(titulo='Concluido', mensagem='Análise e impressões concluidas'))
 
     def atualiza_progresso(self):
-        frame_child = self.frame_principal.children
-        self.linha_atual += 1
+        frame_child = self.children['principal'].children
+
+        self.linha_atual = self.dicionario_arquivo.line_num-1
         repetidos = self.linha_atual - self.total_de_cpfs_invalidos - self.total_de_participantes_validos
-        porcentagem = round(self.linha_atual / self.total_de_cadastros * 100, ndigits = 2)
+        porcentagem = round(self.linha_atual / self.total_de_cadastros * 100, ndigits=2)
 
-        frame_child['progresso'].configure(value = self.linha_atual)
-        frame_child['info'].configure(
-            text = f'{self.linha_atual} de {self.total_de_cadastros} -- {porcentagem}%'
-        )
-        frame_child['numero_validos'].configure(text = self.total_de_participantes_validos)
-        frame_child['numero_repetidos'].configure(text = repetidos)
+        frame_child['progresso'].configure(value=self.linha_atual)
+        frame_child['info'].configure(text=f'{self.linha_atual} de {self.total_de_cadastros} -- {porcentagem}%')
+        frame_child['numero_validos'].configure(text=self.total_de_participantes_validos)
+        frame_child['numero_invalidos'].configure(text=self.total_de_cpfs_invalidos)
+        frame_child['numero_repetidos'].configure(text=repetidos)
 
-    def cpf_valido(self, cpf):
-        validado = validate(doc = cpf, doctype = 'cpf', lazy = False)
+    def valida_cpf(self, cpf):
+        validado = validate(doc=cpf, doctype='cpf', lazy=False)
         if not validado:
             self.total_de_cpfs_invalidos += 1
-            self.frame_principal.children['numero_invalidos'].configure(text = self.total_de_cpfs_invalidos)
         return validado
 
     @staticmethod
     def mascara_cpf(cpf):
-        return parse(doc = cpf, doctype = 'cpf', mask = True)
-
-    @staticmethod
-    def adiciona_info_filtrada(linha):
-        path = abspath('./Para análise/inscrições_filtradas.csv')
-        with open(path, mode = 'a', encoding = 'UTF-16') as arquivo:
-            arquivo.write(linha)
-            arquivo.close()
+        return parse(doc=cpf, doctype='cpf', mask=True)
 
     def binds(self):
         # Cria os binds na tela do root
-        self.root.bind('<Escape>', lambda e: self.root.quit())
-        self.root.bind('<Return>', self.inicia_verificacao)
+        self.bind('<Escape>', lambda e: self.quit())
+        self.bind('<Return>', lambda e: self.inicia_verificacao())
+
+    @staticmethod
+    def show_info(titulo, mensagem):
+        return showinfo(title=titulo, message=mensagem)
 
 
 if __name__ == '__main__':

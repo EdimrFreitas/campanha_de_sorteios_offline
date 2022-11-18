@@ -16,7 +16,7 @@ from tkinter.messagebox import showerror, showinfo, showwarning, askyesno
 from tkinter.filedialog import askopenfilename
 
 
-class self:
+class Construtor:
     """
     Serve para criar de forma mais prática
     :return:
