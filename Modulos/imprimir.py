@@ -2,7 +2,7 @@ from time import sleep
 
 from win32printing import Printer
 
-from win32.win32print import EnumPrinters
+from win32print import EnumPrinters
 
 
 class Printing:
