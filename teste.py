@@ -1,10 +1,12 @@
-from os.path import abspath
-import magic
+import os.path
+import csv
 
 
-arquivo = abspath('./Para análise/Testando.csv')
-arquivo = abspath('sorteio 11.csv')
+caminho_lista_codecs = os.path.abspath('./Para análise/sorteio 11 (utf-8).csv')
 
-with open(file=arquivo) as csv:
-    x = magic.detect_from_content(csv)
-    print(x)
+arquivo = open(file=caminho_lista_codecs, mode='r', encoding='u16')
+info = arquivo.readline()
+campo_cpf = 'CPF (sem pontos e traço ex: 12345678900)' in info
+
+print(campo_cpf)
+print(info)
